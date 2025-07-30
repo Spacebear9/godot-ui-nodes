@@ -35,6 +35,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		show_hide_debug_log()
 
 func _try_escape():
+	if get_active_menu().escape_mode == UIMenu.ESCAPE_MODES.exit_app:
+		get_tree().quit()
+		return
 	if get_active_menu().escape_mode == UIMenu.ESCAPE_MODES.close_menu:
 		escape()
 		return
@@ -89,6 +92,7 @@ func escape():
 		menu_hierarchy.remove_at(menu_hierarchy.size()-1)
 		if menu_hierarchy.size() > 0:
 			_change_active_menu(get_active_menu())
+		set_debug_label()
 
 func escape_all():
 	while menu_hierarchy.size() > 0:
@@ -99,13 +103,15 @@ func set_debug_label():
 		for node in debug_nodes:
 			node.queue_free()
 		debug_nodes.clear()
+		var debug_label = Label.new()
+		debug_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+		add_child(debug_label)
+		debug_nodes.append(debug_label)
+		debug_label.z_index = 5
 		if get_active_menu():
-			var debug_label = Label.new()
-			debug_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
 			debug_label.text = get_active_menu().name
-			add_child(debug_label)
-			debug_nodes.append(debug_label)
-			debug_label.z_index = 5
+		else:
+			debug_label.text = "NO ACTIVE MENU"
 
 func show_hide_debug_log():
 	if debug_log.visible:
@@ -117,9 +123,15 @@ func show_hide_debug_log():
 		for child:Control in debug_log.get_children():
 			child.show()
 
-func debug_message(message:String):
+func assert_ui(condition:bool,message:String) -> bool:
+	if not condition == true:
+		debug_message(message)
+		return true
+	return false
+
+func debug_message(message:String,time = 1):
 	var label = Label.new()
 	label.text = message
 	debug_log.add_child(label)
-	await get_tree().create_timer(1).timeout
+	await get_tree().create_timer(time).timeout
 	label.hide()
