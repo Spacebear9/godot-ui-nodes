@@ -3,8 +3,14 @@ extends CanvasLayer
 class_name UIHandler
 ## Main handler for UIElement nodes
 
-@export var debug_mode: bool
+@export var debug_mode: debug_modes
+enum debug_modes {
+	all,
+	log_only,
+	disabled
+}
 var debug_nodes: Array[Node]
+var debug_log = VBoxContainer.new()
 
 @export_group("UI Menus")
 @export var first_active:UIMenu
@@ -15,9 +21,20 @@ signal menu_changed(UIMenu)
 func _ready() -> void:
 	_setup_children()
 	
+	debug_log.set_anchors_preset(Control.PRESET_FULL_RECT)
+	debug_log.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	debug_log.alignment = BoxContainer.ALIGNMENT_END
+	add_child(debug_log)
+	if debug_mode == debug_modes.disabled:
+		debug_log.hide()
+	
 func _unhandled_input(event: InputEvent) -> void:
-	if not get_active_menu() is UIMenu or not event.is_action_pressed("ui_cancel"):
-		return
+	if get_active_menu() is UIMenu && event.is_action_pressed("ui_cancel"):
+		_try_escape()
+	if event.is_action_pressed("ui_home"):
+		show_hide_debug_log()
+
+func _try_escape():
 	if get_active_menu().escape_mode == UIMenu.ESCAPE_MODES.close_menu:
 		escape()
 		return
@@ -78,7 +95,7 @@ func escape_all():
 		escape()
 
 func set_debug_label():
-	if debug_mode:
+	if debug_mode == debug_modes.all:
 		for node in debug_nodes:
 			node.queue_free()
 		debug_nodes.clear()
@@ -89,3 +106,20 @@ func set_debug_label():
 			add_child(debug_label)
 			debug_nodes.append(debug_label)
 			debug_label.z_index = 5
+
+func show_hide_debug_log():
+	if debug_log.visible:
+		debug_log.hide()
+		for child:Control in debug_log.get_children():
+			child.hide()
+	else:
+		debug_log.show()
+		for child:Control in debug_log.get_children():
+			child.show()
+
+func debug_message(message:String):
+	var label = Label.new()
+	label.text = message
+	debug_log.add_child(label)
+	await get_tree().create_timer(1).timeout
+	label.hide()
