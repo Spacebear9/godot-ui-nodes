@@ -125,11 +125,11 @@ func show_hide_debug_log():
 
 func assert_ui(condition:bool,message:String) -> bool:
 	if not condition == true:
-		debug_message(message)
+		print_log(message)
 		return true
 	return false
 
-func debug_message(message:String,time = 1):
+func print_log(message:String,time = 1.0):
 	var label = Label.new()
 	label.text = message
 	debug_log.add_child(label)
